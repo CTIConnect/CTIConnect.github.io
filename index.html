@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CTIConnect — A Benchmark for Retrieval-Augmented LLMs over Heterogeneous CTI</title>
+  <meta name="description" content="CTIConnect is a benchmark for systematically evaluating retrieval-augmented LLMs across the Cyber Threat Intelligence task landscape — 1,860 expert-verified QA pairs spanning 9 tasks and 5 heterogeneous CTI sources." />
+  <meta property="og:title" content="CTIConnect" />
+  <meta property="og:description" content="A Benchmark for Retrieval-Augmented LLMs over Heterogeneous Cyber Threat Intelligence (KDD 2026)." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ====== NAV ====== -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="#top">
+        <img class="nav-logo" src="assets/cticonnect-icon.png" alt=""
+             onerror="this.outerHTML='&lt;span class=&quot;logo&quot;&gt;C&lt;/span&gt;'" />
+        <span>CTIConnect</span>
+      </a>
+      <div class="nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#tasks">Tasks</a>
+        <a href="#leaderboard">Leaderboard</a>
+        <a href="#methodology">Methodology</a>
+        <a href="#data">Data</a>
+        <a href="#cite">Cite</a>
+        <a class="nav-gh" href="https://github.com/peng-gao-lab/CTIConnect" target="_blank" rel="noopener">★ GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====== HERO ====== -->
+  <header class="hero" id="top">
+    <img class="hero-icon" src="assets/cticonnect-icon.png" alt="CTIConnect"
+         onerror="this.style.display='none'" />
+    <h1>CTIConnect</h1>
+    <p class="subtitle">A Benchmark for Retrieval-Augmented LLMs over Heterogeneous Cyber Threat Intelligence</p>
+
+    <div class="authors">
+      Yutong Cheng<sup>1</sup> · Yang Liu<sup>1</sup> · Changze Li<sup>1</sup> · Dawn Song<sup>2</sup> · Peng Gao<sup>1</sup>
+    </div>
+    <div class="affiliations">
+      <sup>1</sup>Virginia Tech &nbsp;&nbsp; <sup>2</sup>UC Berkeley
+    </div>
+
+    <div class="btn-row">
+      <a class="btn" href="paper/cticonnect.pdf" target="_blank" rel="noopener">📄 Paper</a>
+      <a class="btn btn-outline" href="https://github.com/peng-gao-lab/CTIConnect" target="_blank" rel="noopener">💻 Code</a>
+      <a class="btn btn-outline" href="https://github.com/peng-gao-lab/CTIConnect/tree/main/data" target="_blank" rel="noopener">📦 Dataset</a>
+      <a class="btn btn-outline" href="#leaderboard">📊 Leaderboard</a>
+      <a class="btn btn-outline" href="#cite">📝 Cite</a>
+    </div>
+  </header>
+
+  <!-- ====== LEADERBOARD (blends with hero) ====== -->
+  <section class="section section-tight" id="leaderboard">
+    <div class="container">
+      <div class="section-kicker">🏆 Leaderboard</div>
+      <h2 class="section-title">Performance across 10 LLMs</h2>
+      <p class="section-sub">
+        Per-task F1 across three retrieval configurations: <strong>CB</strong> (Closed-Book),
+        <strong>VR</strong> (Vanilla RAG), and <strong>DS</strong> (Domain-Specific strategy: EtR for EL, DtR for EA, CSKG-guided for MDS).
+        Multi-Doc Synthesis omits CB as the task inherently requires multi-document retrieval.
+        All ten models are evaluated on a 691-pair subset of CTIConnect; full-benchmark verification on three
+        representative models confirms that rankings and per-category structure are preserved on all 1,860 pairs.
+      </p>
+
+      <div class="lb-controls">
+        <div class="lb-group" role="tablist" aria-label="Task category">
+          <button class="lb-btn active" data-lb-category="Overall">Overall</button>
+          <button class="lb-btn" data-lb-category="EL">Entity Linking</button>
+          <button class="lb-btn" data-lb-category="EA">Entity Attribution</button>
+          <button class="lb-btn" data-lb-category="MDS">Multi-Doc Synthesis</button>
+        </div>
+        <div class="lb-group" role="tablist" aria-label="Retrieval config">
+          <button class="lb-btn" data-lb-config="CB">CB</button>
+          <button class="lb-btn" data-lb-config="VR">VR</button>
+          <button class="lb-btn active" data-lb-config="DS">DS</button>
+        </div>
+        <div class="lb-group" role="tablist" aria-label="Model kind">
+          <button class="lb-btn active" data-lb-kind="all">All</button>
+          <button class="lb-btn" data-lb-kind="proprietary">Proprietary</button>
+          <button class="lb-btn" data-lb-kind="open-source">Open-source</button>
+        </div>
+      </div>
+
+      <div class="lb-table-wrap">
+        <table class="lb" id="lb-table"></table>
+      </div>
+      <p class="lb-note">Click any task column header to sort. Bars within each cell are proportional to F1. Best per column is highlighted in red.</p>
+    </div>
+  </section>
+
+  <!-- ====== OVERVIEW ====== -->
+  <section class="section section-soft" id="overview">
+    <div class="container">
+      <div class="section-kicker">Benchmark Overview</div>
+      <h2 class="section-title">Bridging the cross-source semantic gap in CTI</h2>
+      <p class="section-sub">
+        CTI knowledge spans structured taxonomies (CVE, CWE, CAPEC, MITRE ATT&amp;CK) and unstructured vendor reports.
+        Queries expressed in one vocabulary systematically fail to match relevant evidence in another — causing vanilla
+        embedding-based retrieval to break down. CTIConnect is the first retrieval-augmented benchmark that systematically
+        evaluates this gap across the full CTI task landscape.
+      </p>
+
+      <p class="lead">
+        We integrate <strong>5 heterogeneous CTI sources</strong> into <strong>1,860 expert-verified QA pairs</strong>
+        across <strong>9 tasks</strong> in <strong>3 categories</strong>. Each category is paired with a domain-specific
+        retrieval strategy and evaluated against vanilla RAG baselines on <strong>10 state-of-the-art LLMs</strong>.
+      </p>
+
+      <!-- Structured KBs -->
+      <div class="sources-block">
+        <p class="sources-label">Structured knowledge bases</p>
+        <div class="kb-grid">
+          <a class="kb-card" href="https://www.cve.org/" target="_blank" rel="noopener" title="Common Vulnerabilities and Exposures">
+            <div class="kb-logo-wrap"><img class="kb-logo" src="assets/kb/cve.png" alt="CVE" /></div>
+            <span class="kb-sub">Vulnerabilities</span>
+            <span class="kb-meta">200K+ records</span>
+          </a>
+          <a class="kb-card" href="https://cwe.mitre.org/" target="_blank" rel="noopener" title="Common Weakness Enumeration">
+            <div class="kb-logo-wrap"><img class="kb-logo" src="assets/kb/cwe.png" alt="CWE" /></div>
+            <span class="kb-sub">Weaknesses</span>
+            <span class="kb-meta">900+ categories</span>
+          </a>
+          <a class="kb-card" href="https://capec.mitre.org/" target="_blank" rel="noopener" title="Common Attack Pattern Enumeration and Classification">
+            <div class="kb-logo-wrap"><img class="kb-logo" src="assets/kb/capec.png" alt="CAPEC" /></div>
+            <span class="kb-sub">Attack Patterns</span>
+            <span class="kb-meta">500+ patterns</span>
+          </a>
+          <a class="kb-card" href="https://attack.mitre.org/" target="_blank" rel="noopener" title="MITRE ATT&amp;CK Framework">
+            <div class="kb-logo-wrap"><img class="kb-logo" src="assets/kb/attack.png" alt="MITRE ATT&amp;CK" /></div>
+            <span class="kb-sub">Techniques</span>
+            <span class="kb-meta">MITRE framework</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Vendor reports -->
+      <div class="sources-block">
+        <p class="sources-label">Unstructured vendor threat reports · 321 reports from 35 sources</p>
+        <div class="vendor-wall">
+          <a class="vendor-card" href="https://www.trendmicro.com/en_us/research.html" target="_blank" rel="noopener" title="Trend Micro">
+            <img src="assets/vendors/trendmicro.png" alt="Trend Micro" />
+          </a>
+          <a class="vendor-card" href="https://www.crowdstrike.com/blog/" target="_blank" rel="noopener" title="CrowdStrike">
+            <img src="assets/vendors/crowdstrike.png" alt="CrowdStrike" />
+          </a>
+          <a class="vendor-card" href="https://cloud.google.com/security/resources/insights" target="_blank" rel="noopener" title="Google Threat Intelligence">
+            <img src="assets/vendors/google-ti.png" alt="Google Threat Intelligence" />
+          </a>
+          <a class="vendor-card" href="https://unit42.paloaltonetworks.com/" target="_blank" rel="noopener" title="Unit 42 by Palo Alto Networks">
+            <img src="assets/vendors/unit42.png" alt="Unit 42" />
+          </a>
+          <a class="vendor-card" href="https://www.avertium.com/" target="_blank" rel="noopener" title="Avertium">
+            <img src="assets/vendors/avertium.png" alt="Avertium" />
+          </a>
+        </div>
+        <p class="vendor-more-note">…and 30 more vendor and security-news sources (BleepingComputer, Dark Reading, The Hacker News, Symantec, Kaspersky, ESET, Check Point, Microsoft, NCC Group, etc.)</p>
+      </div>
+
+      <!-- 3 categories -->
+      <div class="cat-grid" id="cat-grid" style="margin-top:48px"></div>
+    </div>
+  </section>
+
+  <!-- ====== TASKS ====== -->
+  <section class="section" id="tasks">
+    <div class="container">
+      <div class="section-kicker">The Nine Tasks</div>
+      <h2 class="section-title">Nine cross-source operations</h2>
+      <p class="section-sub">
+        Organized into three categories based on the source types they bridge.
+        Together, they cover all cross-source directions in CTI analysis.
+      </p>
+      <div class="tasks-grid" id="tasks-grid"></div>
+    </div>
+  </section>
+
+  <!-- ====== METHODOLOGY ====== -->
+  <section class="section section-soft" id="methodology">
+    <div class="container">
+      <div class="section-kicker">Retrieval Strategies</div>
+      <h2 class="section-title">Domain-specific strategies for each semantic gap</h2>
+      <p class="section-sub">
+        Each task category exhibits a distinct manifestation of the cross-source semantic gap. We design a domain-specific
+        retrieval strategy for each, evaluated against Closed-Book and Vanilla RAG baselines.
+      </p>
+
+      <div class="method-grid">
+        <div class="method-card">
+          <div class="head"><span class="chip" style="color: var(--el); background:#dbeafe; border-color:#bfdbfe;">EL</span><h3>Extract-then-Retrieve (EtR)</h3></div>
+          <p>The LLM extracts the security-relevant semantic content of the input description (vulnerability type, weakness mechanism, impact) and canonicalizes it into keyphrases aligned with the target KB. The canonicalized keyphrases are then embedded as a dense query for top-k retrieval — the retrieval path itself stays purely dense.</p>
+          <div class="flow">query → extract &amp; canonicalize → dense top-k retrieve</div>
+        </div>
+        <div class="method-card">
+          <div class="head"><span class="chip" style="color: var(--ea); background:#d1fae5; border-color:#a7f3d0;">EA</span><h3>Decompose-then-Retrieve (DtR)</h3></div>
+          <p>Decomposes the input passage into N atomic behaviors, canonicalizes each into taxonomy-aligned vocabulary, and performs independent retrieval per behavior before aggregation. Addresses the vocabulary mismatch between narrative prose and formal taxonomy entries.</p>
+          <div class="flow">passage → decompose → per-behavior retrieve → aggregate</div>
+        </div>
+        <div class="method-card">
+          <div class="head"><span class="chip" style="color: var(--mds); background:#fef3c7; border-color:#fde68a;">MDS</span><h3>CSKG-Guided RAG</h3></div>
+          <p>Builds a Cybersecurity Knowledge Graph offline with CTINexus: each report is reduced to a bag of canonical entities by extracting STIX-aligned named entities and resolving aliases against a MITRE-Groups dictionary. At query time, corpus reports are ranked against the query entity bag via BM25 with IDF weighting — bypassing the alias-driven and chunk-noise failures of embedding retrieval.</p>
+          <div class="flow">extract &amp; resolve entities → BM25 over entity bags → retrieve top-k reports</div>
+        </div>
+      </div>
+
+      <!-- Worked examples -->
+      <div id="example-tabs" class="example-tabs"></div>
+      <div id="example-cards"></div>
+    </div>
+  </section>
+
+  <!-- ====== KEY FINDINGS ====== -->
+  <section class="section" id="findings">
+    <div class="container">
+      <div class="section-kicker">Key Findings</div>
+      <h2 class="section-title">What 10 LLMs × 9 tasks × 3 configs revealed</h2>
+      <div class="findings-grid">
+        <div class="finding">
+          <h3>Domain-specific retrieval beats vanilla RAG</h3>
+          <p>Tailored strategies yield substantial gains over generic embedding retrieval — <span class="big">+35.2%</span> for Entity Linking, <span class="big">+16.0%</span> for Entity Attribution, and <span class="big">+11.3%</span> for Multi-Doc Synthesis — with the magnitude depending on the semantic gap of each category.</p>
+        </div>
+        <div class="finding">
+          <h3>The semantic gap is task-asymmetric</h3>
+          <p>Query-to-gold vs. query-to-top-1 cosine gap by category: <span class="big">0.06</span> for EL, <span class="big">0.31</span> for EA, <span class="big">0.43</span> for MDS. EL is near-saturated, EA suffers vocabulary mismatch, and MDS is dominated by alias-driven near-miss distractors.</p>
+        </div>
+        <div class="finding">
+          <h3>The bottleneck shifts by category</h3>
+          <p>For EL and MDS the bottleneck is <strong>retrieval infrastructure</strong>; for EA it shifts to <strong>model reasoning</strong>. Intra-family scaling benefits concentrate in EA — LLaMA-3 8B→405B gains <strong>+29.5%</strong> on attribution alone.</p>
+        </div>
+        <div class="finding">
+          <h3>No single model dominates</h3>
+          <p>GPT-5 leads overall at <strong>81.4%</strong>, but the next three (Qwen-3-235B, GPT-4o, Claude-Sonnet-4) cluster within <strong>1%</strong>. Qwen-3-235B even tops EL with perfect F1 on three tasks — CTIConnect discriminates along multiple capability axes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== DATA / CONSTRUCTION ====== -->
+  <section class="section section-soft" id="data">
+    <div class="container">
+      <div class="section-kicker">Dataset</div>
+      <h2 class="section-title">Construction pipeline &amp; data composition</h2>
+
+      <div class="row-data">
+        <!-- Left: figure + table -->
+        <div class="row-data-left">
+          <figure class="figure">
+            <img src="assets/figures/pipeline.png" alt="Benchmark construction pipeline" />
+          </figure>
+
+          <div class="lb-table-wrap" style="background:#fff">
+            <table class="lb">
+              <thead>
+                <tr><th style="text-align:left; padding-left:18px">Data source</th><th>Tasks</th><th>QA</th><th>Ground truth</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="model-name">Structured Mappings</td><td>RCM (290), WIM (308), ATD (261), ESD (280)</td><td><b>1,139</b></td><td>Official KB links</td></tr>
+                <tr><td class="model-name">Report Clusters</td><td>TAP (135), MLA (95), CSC (111)</td><td><b>341</b></td><td>Manual clustering</td></tr>
+                <tr><td class="model-name">B2F Alignments</td><td>ATA (160), VCA (220)</td><td><b>380</b></td><td>Expert annotation</td></tr>
+                <tr><td class="model-name" style="font-weight:700">Total</td><td>9 tasks</td><td><b>1,860</b></td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: description -->
+        <div class="row-data-right">
+          <p class="lead">All 1,860 QA pairs are produced through a three-stage pipeline ensuring authoritative ground truth and quality control.</p>
+          <ol class="pipeline-steps">
+            <li>
+              <strong>Seed correlation annotation.</strong>
+              Derived from official MITRE/NVD cross-source mappings for Entity Linking, and dual expert annotation with senior adjudication for Entity Attribution and Multi-Doc Synthesis.
+            </li>
+            <li>
+              <strong>Template-constrained QA synthesis.</strong>
+              Each correlation is transformed into task-specific QA via prompt templates that specify the instruction, input entity, expected output, and required format — grounding generation in verified correlations to reduce hallucination.
+            </li>
+            <li>
+              <strong>LLM–human collaborative curation.</strong>
+              A GPT-4 judge filters low-confidence samples; two domain practitioners independently verify each pair; a senior annotator with 3+ years of CTI experience adjudicates final inclusion.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== CITATION ====== -->
+  <section class="section" id="cite">
+    <div class="container">
+      <div class="section-kicker">Cite</div>
+      <h2 class="section-title">BibTeX</h2>
+      <p class="section-sub">If you find CTIConnect useful in your research, please cite our paper.</p>
+      <div style="position:relative">
+        <button id="copy-cite" class="copy-btn">Copy</button>
+<pre id="cite-block" class="cite-block">@inproceedings{cheng2026cticonnect,
+  title     = {CTIConnect: A Benchmark for Retrieval-Augmented LLMs over Heterogeneous Cyber Threat Intelligence},
+  author    = {Cheng, Yutong and Liu, Yang and Li, Changze and Song, Dawn and Gao, Peng},
+  booktitle = {Proceedings of the 32nd ACM SIGKDD Conference on Knowledge Discovery and Data Mining V.2 (KDD '26)},
+  year      = {2026},
+  address   = {Jeju Island, Republic of Korea},
+  publisher = {ACM},
+  doi       = {10.1145/3770855.3817527},
+  isbn      = {979-8-4007-2259-2}
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== FOOTER ====== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <p><strong>CTIConnect</strong> · KDD 2026</p>
+        <p>Contact: <a href="mailto:yutongcheng@vt.edu">yutongcheng@vt.edu</a> · <a href="mailto:penggao@vt.edu">penggao@vt.edu</a></p>
+      </div>
+      <div style="text-align:right">
+        <p><a href="https://github.com/peng-gao-lab/CTIConnect" target="_blank" rel="noopener">github.com/peng-gao-lab/CTIConnect</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

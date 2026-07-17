@@ -1,0 +1,115 @@
+{
+  "categories": [
+    {
+      "id": "EL",
+      "name": "Entity Linking",
+      "color": "blue",
+      "direction": "Structured → Structured",
+      "description": "Map an entry in one structured CTI knowledge base to its corresponding entry in another. The retrieval space is vast — 900+ CWE categories, 200K+ CVE records, 500+ CAPEC patterns — and canonicalization is the primary retrieval bottleneck.",
+      "strategy": {
+        "name": "Extract-then-Retrieve (EtR)",
+        "summary": "LLM extracts the security-relevant semantic content of the input (vulnerability type, weakness mechanism, impact) and canonicalizes it into keyphrases aligned with the target knowledge base; the keyphrases are embedded as a dense query for top-k retrieval."
+      },
+      "tasks": [
+        {
+          "id": "RCM",
+          "name": "Root Cause Mapping",
+          "direction": "CVE → CWE",
+          "summary": "Identify the underlying weakness category of a disclosed vulnerability from its CVE description.",
+          "example": {
+            "icon": "🔗",
+            "intro": "Given a vulnerability behavior description, identify the underlying CWE weakness category.",
+            "input": "A vulnerability in a Python library allows remote attackers to enumerate valid usernames by observing differences in server response timing during authentication. Which CWE weakness category corresponds to this vulnerability, and why is it the root cause?",
+            "output": "CWE-203.\n\nExplanation: The vulnerability causes user enumeration via response differences, matching CWE-203: observable discrepancy exposing state information."
+          }
+        },
+        {
+          "id": "WIM",
+          "name": "Weakness Instantiation Mapping",
+          "direction": "CWE → CVE",
+          "summary": "Given an abstract weakness description, identify a concrete CVE that instantiates it."
+        },
+        {
+          "id": "ATD",
+          "name": "Attack Technique Derivation",
+          "direction": "CAPEC → ATT&CK",
+          "summary": "Map a CAPEC attack pattern to its corresponding MITRE ATT&CK technique."
+        },
+        {
+          "id": "ESD",
+          "name": "Exploitation Surface Discovery",
+          "direction": "CWE → CAPEC",
+          "summary": "Reason from the defensive perspective (weakness) to the offensive perspective (attack pattern)."
+        }
+      ]
+    },
+    {
+      "id": "EA",
+      "name": "Entity Attribution",
+      "color": "green",
+      "direction": "Unstructured → Structured",
+      "description": "Ground narrative attack or vulnerability descriptions in threat reports to formal entries in structured CTI taxonomies. Analyst-authored narratives use action-oriented language that differs fundamentally from technique-oriented taxonomy terminology, creating a vocabulary mismatch that generic embeddings cannot bridge.",
+      "strategy": {
+        "name": "Decompose-then-Retrieve (DtR)",
+        "summary": "Decompose the input passage into N atomic behaviors, canonicalize each into taxonomy-aligned vocabulary, and perform independent retrieval per behavior before aggregation."
+      },
+      "tasks": [
+        {
+          "id": "ATA",
+          "name": "Attack Technique Attribution",
+          "direction": "Report → ATT&CK",
+          "summary": "Identify all MITRE ATT&CK techniques described in a threat report passage by decomposing complex behavioral narratives into atomic actions.",
+          "example": {
+            "icon": "📰",
+            "intro": "Given an excerpt from a vendor threat report, attribute the described behavior to the correct MITRE ATT&CK technique.",
+            "input": "I recently read in a security blog: \"Cuba ransomware operators were infiltrating networks by encrypting files using the '.cuba' extension.\" Please provide: 1) the MITRE ATT&CK category that maps to this behavior, 2) an explanation of the mapping between the ransomware behavior and the technique, and 3) which operating systems and platforms are affected?",
+            "output": "1) MITRE ATT&CK Category: Data Encrypted for Impact (T1486).\n\n2) Explanation: Encrypting files to disrupt business operations aligns with T1486 — adversaries deploy ransomware-grade encryption to render victim resources inaccessible until ransom is paid.\n\n3) Affected platforms: Windows, Linux, macOS, Network Devices, ESXi, Containers."
+          }
+        },
+        {
+          "id": "VCA",
+          "name": "Vulnerability Catalog Attribution",
+          "direction": "Report → CWE",
+          "summary": "Identify all CWE weakness categories referenced in a vulnerability exploitation narrative. Reports describe exploitation effects rather than naming weaknesses directly."
+        }
+      ]
+    },
+    {
+      "id": "MDS",
+      "name": "Multi-Document Synthesis",
+      "color": "amber",
+      "direction": "Unstructured → Unstructured",
+      "description": "Aggregate intelligence about the same entity scattered across multiple vendor threat reports. The primary challenge is entity aliasing — different vendors describe the same threat actor, malware family, or campaign under inconsistent naming conventions (e.g., “APT29,” “Cozy Bear,” “Nobelium”), producing the largest semantic gap of any task category.",
+      "strategy": {
+        "name": "CSKG-Guided RAG",
+        "summary": "Construct a Cybersecurity Knowledge Graph offline with CTINexus: reduce each report to a bag of canonical entities by extracting STIX-aligned named entities and resolving aliases against a MITRE-Groups dictionary. At query time, rank corpus reports against the query entity bag via BM25 with IDF weighting and retrieve the top-k as synthesis context."
+      },
+      "tasks": [
+        {
+          "id": "TAP",
+          "name": "Threat Actor Profiling",
+          "direction": "Reports → Actor Profile",
+          "summary": "Synthesize a comprehensive actor profile — covering TTPs, targets, and toolsets — from reports referencing the same group under different aliases."
+        },
+        {
+          "id": "MLA",
+          "name": "Malware Lineage Analysis",
+          "direction": "Reports → Lineage",
+          "summary": "Trace the evolutionary lineage of a malware family across reports on related variants, identifying capability progression and code reuse.",
+          "example": {
+            "icon": "🧬",
+            "intro": "Given an anchor threat report, trace the evolutionary lineage of a malware family across related variants — exploitation chains, distribution shifts, and targeting evolution (paper Appendix A.4).",
+            "input": "📄 Anchor Report (Google Threat Analysis Group · 2023-03)\n\nA Google TAG report describing Magniber ransomware actors exploiting a variant of the Microsoft SmartScreen security bypass to deliver malicious installers.\n\n❓ Question: Trace the lineage of the Magniber ransomware family. How have the attackers reused bypass techniques, modified malware variants, shifted distribution methods, and evolved their targeting strategies over time?",
+            "output": "CSKG-guided retrieval surfaces two earlier reports sharing canonical entities with the input:\n  • ThreatPost (2017-10): earlier Magniber variant targeting South Korean users\n  • CrowdStrike (2021-08): Magniber using PrintNightmare (CVE-2021-34527) for victim infection\n\nSynthesized lineage — a six-year (2017–2023) campaign:\n  • Exploitation chain: initial dropper → PrintNightmare (2021) → SmartScreen bypass (2023)\n  • Targeting evolution: South Korea (2017) → broader Windows users\n  • Consistent malware family identity with rotating delivery vectors and persistent operational infrastructure\n\nNone of the three reports alone establishes this continuity — vanilla RAG misses the 2017/2021 reports because vendor-specific naming and shifting exploit terminology push them below ranking thresholds."
+          }
+        },
+        {
+          "id": "CSC",
+          "name": "Campaign Storyline Construction",
+          "direction": "Reports → Timeline",
+          "summary": "Reconstruct a coherent campaign timeline from reports documenting different phases of the same operation, reconciling fragmented accounts."
+        }
+      ]
+    }
+  ]
+}
